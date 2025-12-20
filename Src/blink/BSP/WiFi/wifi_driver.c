@@ -16,7 +16,7 @@
 // #define EXAMPLE_ESP_WIFI_PASS      ""
 
 // static void event_handler(void* arg, esp_event_base_t event_base,
-//                                 int32_t event_id, void* event_data)
+//                                 int16_t event_id, void* event_data)
 // {
 //     if (event_base == WIFI_STA_EVENT && event_id == WIFI_EVENT_STA_CONNECTED) {
 //         ESP_LOGI("WiFi", "Connected to AP!");
