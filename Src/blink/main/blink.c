@@ -27,7 +27,7 @@
 // EXAMPLE_STD_DIN_IO2 = 26 
 
 // Sine wave function generator consts
-#define SAMPLE_RATE   44100
+#define SAMPLE_RATE   44000
 #define TONE_FREQ     440.0f   // A4
 #define AMPLITUDE     0.2f     // 0.0–1.0
 
@@ -49,7 +49,7 @@
 #define EXAMPLE_STD_DIN_IO2         EXAMPLE_I2S_DIN_IO2     // I2S data in io number
 #endif
 
-#define EXAMPLE_BUFF_SIZE               2048
+#define EXAMPLE_BUFF_SIZE               2000 // in bytes
 
 static i2s_chan_handle_t                tx_chan;        // I2S tx channel handler
 static i2s_chan_handle_t                rx_chan;        // I2S rx channel handler
@@ -82,6 +82,108 @@ static void i2s_example_read_task(void *args)
 }
 
 // Function for testing sine wave output
+
+// This code works for testing a square wave 
+static void i2s_example_write_square_task(void *args)
+{
+    int num_samples = EXAMPLE_BUFF_SIZE / 2;
+    int16_t *w_buf = calloc(num_samples, sizeof(int16_t));
+    assert(w_buf);
+
+    for (int i = 0; i < num_samples / 2; i++) {
+        if ((i % 2) == 0) {
+            w_buf[i] = 0x0000;
+        } else {
+            w_buf[i] = 0x0100;
+        }
+    }
+
+    size_t w_bytes = EXAMPLE_BUFF_SIZE;
+    ESP_ERROR_CHECK(i2s_channel_enable(tx_chan));
+
+    while (1) {
+        // printf("in write loop\r\b");
+        i2s_channel_write(
+            tx_chan,
+            w_buf,
+            EXAMPLE_BUFF_SIZE,
+            &w_bytes,
+            portMAX_DELAY
+        );
+    }
+}
+
+// Super simple sine wave, we expect the clock frequency to be 44kHz
+static void i2s_example_write__simple_sine_task(void *args)
+{
+    int16_t *w_buf = calloc(EXAMPLE_BUFF_SIZE / 2, sizeof(int16_t));
+    assert(w_buf);
+
+    int samples = EXAMPLE_BUFF_SIZE / 2; // stereo frames
+
+    int16_t frequency = 440; // 440hz
+    int16_t amplitude_max = 30000;
+
+
+    for (int i = 0; i < samples; i++) {
+        w_buf[i] = (int16_t)(amplitude_max * sin(2 * M_PI * frequency * i / SAMPLE_RATE));
+
+    }
+
+    size_t w_bytes = EXAMPLE_BUFF_SIZE;
+    ESP_ERROR_CHECK(i2s_channel_enable(tx_chan));
+
+    while (1) {
+        // printf("in write loop\r\b");
+        i2s_channel_write(
+            tx_chan,
+            w_buf,
+            EXAMPLE_BUFF_SIZE,
+            &w_bytes,
+            portMAX_DELAY
+        );
+    }
+}
+
+
+static void i2s_example_write__saw_task(void *args)
+{
+    int16_t *w_buf = calloc(EXAMPLE_BUFF_SIZE / 2, sizeof(int16_t));
+    assert(w_buf);
+
+    int samples = EXAMPLE_BUFF_SIZE / 2; // number of int16_t samples
+    int16_t amplitude_max = 3000;
+    float frequency = 440.0f;             // 440 Hz tone
+
+    // Phase accumulator variables
+    float phase = 0.0f;
+    float phase_inc = frequency / (float)SAMPLE_RATE; // fraction of cycle per sample
+
+    // Fill the buffer
+    for (int i = 0; i < samples; i++) {
+        // Sawtooth goes from -amplitude_max to +amplitude_max
+        w_buf[i] = (int16_t)((2.0f * phase - 1.0f) * amplitude_max);
+
+        // Increment phase
+        phase += phase_inc;
+        if (phase >= 1.0f) phase -= 1.0f; // wrap around at 1.0
+    }
+
+    size_t w_bytes = EXAMPLE_BUFF_SIZE;
+    ESP_ERROR_CHECK(i2s_channel_enable(tx_chan));
+
+    while (1) {
+        i2s_channel_write(
+            tx_chan,
+            w_buf,
+            EXAMPLE_BUFF_SIZE,
+            &w_bytes,
+            portMAX_DELAY
+        );
+    }
+}
+
+
 
 static void i2s_example_write_sine_task(void *args)
 {
@@ -215,7 +317,7 @@ static void i2s_example_init_std_simplex(void)
      * These two helper macros is defined in 'i2s_std.h' which can only be used in STD mode.
      * They can help to specify the slot and clock configurations for initialization or re-configuring */
     i2s_std_config_t tx_std_cfg = {
-        .clk_cfg  = I2S_STD_CLK_DEFAULT_CONFIG(44100),
+        .clk_cfg  = I2S_STD_CLK_DEFAULT_CONFIG(SAMPLE_RATE),
         .slot_cfg = I2S_STD_MSB_SLOT_DEFAULT_CONFIG(I2S_DATA_BIT_WIDTH_16BIT, I2S_SLOT_MODE_STEREO),
         .gpio_cfg = {
             .mclk = I2S_GPIO_UNUSED,    // some codecs may require mclk signal, this example doesn't need it
@@ -261,13 +363,13 @@ void app_main(void)
         // Blink 3 times to signal program is now running:
     gpio_set_direction(LED_GPIO, GPIO_MODE_OUTPUT);
     gpio_set_level(LED_GPIO, 1);
-    vTaskDelay(pdMS_TO_TICKS(1000));
+    vTaskDelay(pdMS_TO_TICKS(500));
     gpio_set_level(LED_GPIO, 0);
-    vTaskDelay(pdMS_TO_TICKS(1000));
+    vTaskDelay(pdMS_TO_TICKS(500));
     gpio_set_level(LED_GPIO, 1);
-    vTaskDelay(pdMS_TO_TICKS(2000));
+    vTaskDelay(pdMS_TO_TICKS(1000));
     gpio_set_level(LED_GPIO, 0);
-    vTaskDelay(pdMS_TO_TICKS(2000));
+    vTaskDelay(pdMS_TO_TICKS(1000));
 
 #if EXAMPLE_I2S_DUPLEX_MODE
     i2s_example_init_std_duplex();
@@ -278,15 +380,15 @@ void app_main(void)
     // Config Printing
     printf("EXAMPLE_I2S_DUPLEX_MODE = %d \r\n", EXAMPLE_I2S_DUPLEX_MODE);
 
- printf("EXAMPLE_STD_BCLK_IO2 = %d \r\n", EXAMPLE_STD_BCLK_IO2);
- printf("EXAMPLE_STD_WS_IO2 = %d \r\n",  EXAMPLE_STD_WS_IO2); 
- printf("EXAMPLE_STD_DOUT_IO2 = %d \r\n", EXAMPLE_STD_DOUT_IO2);              
- printf("EXAMPLE_STD_DIN_IO2 = %d \r\n", EXAMPLE_STD_DIN_IO2);              
+    printf("EXAMPLE_STD_BCLK_IO2 = %d \r\n", EXAMPLE_STD_BCLK_IO2);
+    printf("EXAMPLE_STD_WS_IO2 = %d \r\n",  EXAMPLE_STD_WS_IO2); 
+    printf("EXAMPLE_STD_DOUT_IO2 = %d \r\n", EXAMPLE_STD_DOUT_IO2);              
+    printf("EXAMPLE_STD_DIN_IO2 = %d \r\n", EXAMPLE_STD_DIN_IO2);              
 
     /* Step 3: Create writing and reading task, enable and start the channels */
     // xTaskCreate(i2s_example_read_task, "i2s_example_read_task", 4096, NULL, 5, NULL);
-    xTaskCreate(i2s_example_write_task, "i2s_example_write_task", 4096, NULL, 5, NULL);
-    // xTaskCreate(i2s_example_write_sine_task, "i2s_example_write_sine_task", 4096, NULL, 5, NULL);
+    // xTaskCreate(i2s_example_write_task, "i2s_example_write_task", 4096, NULL, 5, NULL);
+    xTaskCreate(i2s_example_write__saw_task, "i2s_example_write__saw_task", 4096, NULL, 5, NULL);
 
     
 }

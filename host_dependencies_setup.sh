@@ -34,6 +34,7 @@ fi
 
 # --- Set up environment variables ---
 echo "=== Setting up environment variables ==="
+# TODO: THIS DIDN'T RUN THEN I DID THE INSTALL SCRIPT ON MAC
 if ! grep -q 'IDF_PATH' ~/.bashrc; then
     echo "export IDF_PATH=$ESP_IDF_DIR" >> ~/.bashrc
     echo 'export PATH="$PATH:$HOME/.local/bin"' >> ~/.bashrc
