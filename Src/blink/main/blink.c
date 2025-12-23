@@ -19,19 +19,6 @@
 #include "driver/gpio.h"
 #define LED_GPIO 2   // change if your board uses a different pin
 
-// TODO: PUT THESE SOMEWHERE OR MAKE THIS BE KNOWN THAT THESE PIN CONFIGS WORKED:
-// EXAMPLE_I2S_DUPLEX_MODE = 0 
-// EXAMPLE_STD_BCLK_IO2 = 22 
-// EXAMPLE_STD_WS_IO2 = 23 
-// EXAMPLE_STD_DOUT_IO2 = 25 
-// EXAMPLE_STD_DIN_IO2 = 26 
-
-// Sine wave function generator consts
-#define SAMPLE_RATE   44000
-#define TONE_FREQ     440.0f   // A4
-#define AMPLITUDE     0.2f     // 0.0–1.0
-
-
 /* Set 1 to allocate rx & tx channels in duplex mode on a same I2S controller, they will share the BCLK and WS signal
  * Set 0 to allocate rx & tx channels in simplex mode, these two channels will be totally separated,
  * Specifically, due to the hardware limitation, the simplex rx & tx channels can't be registered on the same controllers on ESP32 and ESP32-S2,
@@ -49,7 +36,11 @@
 #define EXAMPLE_STD_DIN_IO2         EXAMPLE_I2S_DIN_IO2     // I2S data in io number
 #endif
 
-#define EXAMPLE_BUFF_SIZE               2000 // in bytes
+// Sine wave function generator consts
+#define SAMPLE_RATE   44000
+#define TONE_FREQ     440.0f   // A4
+#define AMPLITUDE     0.2f     // 0.0–1.0
+// #define EXAMPLE_BUFF_SIZE               88000 // in bytes
 
 static i2s_chan_handle_t                tx_chan;        // I2S tx channel handler
 static i2s_chan_handle_t                rx_chan;        // I2S rx channel handler
@@ -119,21 +110,20 @@ static void i2s_example_write__simple_sine_task(void *args)
     int16_t *w_buf = calloc(EXAMPLE_BUFF_SIZE / 2, sizeof(int16_t));
     assert(w_buf);
 
-    int samples = EXAMPLE_BUFF_SIZE / 2; // stereo frames
+    int samples = EXAMPLE_BUFF_SIZE / 2; // '/2' is for bytes to int16
 
     int16_t frequency = 440; // 440hz
-    int16_t amplitude_max = 30000;
+    int16_t amplitude_max = 200;
 
 
     for (int i = 0; i < samples; i++) {
         w_buf[i] = (int16_t)(amplitude_max * sin(2 * M_PI * frequency * i / SAMPLE_RATE));
-
     }
 
     size_t w_bytes = EXAMPLE_BUFF_SIZE;
     ESP_ERROR_CHECK(i2s_channel_enable(tx_chan));
 
-    while (1) {
+    // while (1) {
         // printf("in write loop\r\b");
         i2s_channel_write(
             tx_chan,
@@ -142,7 +132,28 @@ static void i2s_example_write__simple_sine_task(void *args)
             &w_bytes,
             portMAX_DELAY
         );
-    }
+    // }
+
+    // Optional: wait for DMA to finish playing the buffer
+    // ESP_ERROR_CHECK(i2s_channel_drain(tx_chan));
+
+    // ESP_ERROR_CHECK(i2s_channel_disable(tx_chan)); // stop I2S
+
+
+//     // Wait until all queued samples are played
+// ESP_ERROR_CHECK(i2s_channel_drain(tx_chan));
+    printf("going to wait \r\n");
+float duration_sec = (float)w_bytes / 2 / SAMPLE_RATE; // divide by 2 for int16_t
+vTaskDelay(pdMS_TO_TICKS(duration_sec * 1000));
+printf("duration_sec * 1000= %f r\n", duration_sec * 1000);
+i2s_channel_disable(tx_chan);
+
+vTaskDelete(NULL);
+
+    printf("end \r\n");
+
+//     // buffer sent once, delete task
+//     vTaskDelete(NULL);
 }
 
 
@@ -182,8 +193,6 @@ static void i2s_example_write__saw_task(void *args)
         );
     }
 }
-
-
 
 static void i2s_example_write_sine_task(void *args)
 {
@@ -359,17 +368,11 @@ static void i2s_example_init_std_simplex(void)
 
 void app_main(void)
 {
-
-        // Blink 3 times to signal program is now running:
+    // Blink 3 times to signal program is now running:
     gpio_set_direction(LED_GPIO, GPIO_MODE_OUTPUT);
     gpio_set_level(LED_GPIO, 1);
     vTaskDelay(pdMS_TO_TICKS(500));
     gpio_set_level(LED_GPIO, 0);
-    vTaskDelay(pdMS_TO_TICKS(500));
-    gpio_set_level(LED_GPIO, 1);
-    vTaskDelay(pdMS_TO_TICKS(1000));
-    gpio_set_level(LED_GPIO, 0);
-    vTaskDelay(pdMS_TO_TICKS(1000));
 
 #if EXAMPLE_I2S_DUPLEX_MODE
     i2s_example_init_std_duplex();
@@ -379,16 +382,14 @@ void app_main(void)
 
     // Config Printing
     printf("EXAMPLE_I2S_DUPLEX_MODE = %d \r\n", EXAMPLE_I2S_DUPLEX_MODE);
-
-    printf("EXAMPLE_STD_BCLK_IO2 = %d \r\n", EXAMPLE_STD_BCLK_IO2);
-    printf("EXAMPLE_STD_WS_IO2 = %d \r\n",  EXAMPLE_STD_WS_IO2); 
-    printf("EXAMPLE_STD_DOUT_IO2 = %d \r\n", EXAMPLE_STD_DOUT_IO2);              
-    printf("EXAMPLE_STD_DIN_IO2 = %d \r\n", EXAMPLE_STD_DIN_IO2);              
+    printf("EXAMPLE_STD_BCLK_IO1 = %d \r\n", EXAMPLE_STD_BCLK_IO1);
+    printf("EXAMPLE_STD_WS_IO1 = %d \r\n",  EXAMPLE_STD_WS_IO1); 
+    printf("EXAMPLE_STD_DOUT_IO1 = %d \r\n", EXAMPLE_STD_DOUT_IO1);              
+    printf("EXAMPLE_STD_DIN_IO1 = %d \r\n", EXAMPLE_STD_DIN_IO1);              
 
     /* Step 3: Create writing and reading task, enable and start the channels */
     // xTaskCreate(i2s_example_read_task, "i2s_example_read_task", 4096, NULL, 5, NULL);
     // xTaskCreate(i2s_example_write_task, "i2s_example_write_task", 4096, NULL, 5, NULL);
-    xTaskCreate(i2s_example_write__saw_task, "i2s_example_write__saw_task", 4096, NULL, 5, NULL);
+    xTaskCreate(i2s_example_write__simple_sine_task, "i2s_example_write__simple_sine_task", 4096, NULL, 5, NULL);
 
-    
 }

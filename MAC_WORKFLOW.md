@@ -19,6 +19,6 @@ sudo usermod -aG dialout $USER
 
 ## Copying files from mac to vm
 ```
-rsync -avz -e "ssh -p 2222" /Users/davidperez/Documents/GitHub/alarm-system/ dubuntu@127.0.0.1:/home/dubuntu/projects/alarm_system/
+rsync -avz -e "ssh -p 2222 -i ~/.ssh/<priv_key>" /Users/davidperez/Documents/GitHub/alarm-system/ dubuntu@127.0.0.1:/home/dubuntu/projects/alarm_system/
 ```
 
