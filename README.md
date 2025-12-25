@@ -95,4 +95,8 @@ idf.py flash
 ```
 
 
+# Improving Build Speed
+
+## 1. Removing unused config
+
 

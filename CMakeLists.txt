@@ -9,12 +9,21 @@ cmake_minimum_required(VERSION 3.16)
 #     set(ESP_IDF_ENABLED FALSE)
 # endif()
 
+
+
+# Tell ESP-IDF where to find "components" in src/
+set(EXTRA_COMPONENT_DIRS
+    ${CMAKE_CURRENT_LIST_DIR}/src/subsystems/i2s
+    ${CMAKE_CURRENT_LIST_DIR}/src/drivers/esp32
+    ${CMAKE_CURRENT_LIST_DIR}/src/app
+)
+
 # ESP-IDF specific criteria: 
 include($ENV{IDF_PATH}/tools/cmake/project.cmake)
 
 project(alarm_system)
 
 # Add all subdirectories (components / modules)
-add_subdirectory(src/subsystems/i2s)
-add_subdirectory(src/drivers/esp32)
-add_subdirectory(src/app)
+# add_subdirectory(src/subsystems/i2s)
+# add_subdirectory(src/drivers/esp32)
+# add_subdirectory(src/app)
