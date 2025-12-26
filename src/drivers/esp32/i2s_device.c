@@ -1,22 +1,38 @@
 #include "i2s.h"
 #include "driver/i2s_std.h"
 
-
-// Sine wave function generator consts
-#define SAMPLE_RATE   44000
-#define TONE_FREQ     440.0f   // A4
-#define AMPLITUDE     0.2f     // 0.0–1.0
-// #define EXAMPLE_BUFF_SIZE               88000 // in bytes
+// includes needed for task delete, see if there's another way
+// to do this?
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "freertos/portmacro.h" // for portMAX_DELAY
 
 // ESP defined GPIO pins used for i2s 1
-#define I2S_BCLK_IO1        GPIO_NUM_4      // I2S bit clock io number
-#define I2S_WS_IO1          GPIO_NUM_5      // I2S word select io number
-#define I2S_DOUT_IO1        GPIO_NUM_18     // I2S data out io number
-#define I2S_DIN_IO1         GPIO_NUM_19     // I2S data in io number
+#define I2S_BCLK_IO1 GPIO_NUM_4  // I2S bit clock io number
+#define I2S_WS_IO1 GPIO_NUM_5    // I2S word select io number
+#define I2S_DOUT_IO1 GPIO_NUM_18 // I2S data out io number
+#define I2S_DIN_IO1 GPIO_NUM_19  // I2S data in io number
 
 // I2S rx channel handler
-static i2s_chan_handle_t                rx_chan;
+static i2s_chan_handle_t tx_chan;
 
+// Static function definitions:
+static void esp32_i2s_init(int sample_rate, int bits_per_sample, int channels);
+static void esp32_i2s_write(int16_t *data_buf, size_t buf_len);
+
+//
+static const i2s_ops_t esp32_i2s_ops = {
+    .init = esp32_i2s_init,
+    .write = esp32_i2s_write,
+};
+
+// When this is called, subsystem/i2s will use this esp32 driver code.
+void i2s_driver_register_esp32(void)
+{
+    i2s_register_ops(&esp32_i2s_ops);
+}
+
+// TODO: incorporate bits_per_sample and channels
 static void esp32_i2s_init(int sample_rate, int bits_per_sample, int channels)
 {
     printf("simplex ran \r\n");
@@ -26,6 +42,8 @@ static void esp32_i2s_init(int sample_rate, int bits_per_sample, int channels)
      * The tx and rx channels here are registered on different I2S controller,
      * Except ESP32 and ESP32-S2, others allow to register two separate tx & rx channels on a same controller */
     i2s_chan_config_t tx_chan_cfg = I2S_CHANNEL_DEFAULT_CONFIG(I2S_NUM_AUTO, I2S_ROLE_MASTER);
+    tx_chan_cfg.dma_frame_num = 256; // TODO: consider changing based on latency concerns
+    tx_chan_cfg.dma_desc_num = 4;    // TODO: consider changing based on latency concerns
     ESP_ERROR_CHECK(i2s_new_channel(&tx_chan_cfg, &tx_chan, NULL));
 
     /* Step 2: Setting the configurations of standard mode and initialize each channels one by one
@@ -33,29 +51,62 @@ static void esp32_i2s_init(int sample_rate, int bits_per_sample, int channels)
      * These two helper macros is defined in 'i2s_std.h' which can only be used in STD mode.
      * They can help to specify the slot and clock configurations for initialization or re-configuring */
     i2s_std_config_t tx_std_cfg = {
-        .clk_cfg  = I2S_STD_CLK_DEFAULT_CONFIG(sample_rate),
+        .clk_cfg = I2S_STD_CLK_DEFAULT_CONFIG(sample_rate),
         .slot_cfg = I2S_STD_MSB_SLOT_DEFAULT_CONFIG(I2S_DATA_BIT_WIDTH_16BIT, I2S_SLOT_MODE_STEREO),
         .gpio_cfg = {
-            .mclk = I2S_GPIO_UNUSED,    // some codecs may require mclk signal, this example doesn't need it
-            .bclk = EXAMPLE_STD_BCLK_IO1,
-            .ws   = EXAMPLE_STD_WS_IO1,
-            .dout = EXAMPLE_STD_DOUT_IO1,
-            .din  = EXAMPLE_STD_DIN_IO1, // TOOD: should use the default IO1??
+            .mclk = I2S_GPIO_UNUSED, // some codecs may require mclk signal, this example doesn't need it
+            .bclk = I2S_BCLK_IO1,
+            .ws = I2S_WS_IO1,
+            .dout = I2S_DOUT_IO1,
+            .din = I2S_DIN_IO1, // TOOD: should use the default IO1??
             .invert_flags = {
                 .mclk_inv = false,
                 .bclk_inv = false,
-                .ws_inv   = false,
+                .ws_inv = false,
             },
         },
     };
     ESP_ERROR_CHECK(i2s_channel_init_std_mode(tx_chan, &tx_std_cfg));
-
 }
 
-static const i2s_ops_t esp32_i2s_ops = {
-    .init = esp32_i2s_init,
-};
+static void esp32_i2s_write(int16_t *data_buf, size_t buf_len)
+{
+    if (data_buf == NULL)
+    {
+        printf("ERROR: data_buf NULL \r\n");
+    }
 
-void i2s_driver_register_esp32(void) {
-    i2s_register_ops(&esp32_i2s_ops);
+    ESP_ERROR_CHECK(i2s_channel_enable(tx_chan));
+
+    printf("DEBUG: about to write to i2s \r\n");
+
+    // This is a blocking function that continues to populate the dma buffers
+    // with the data passed into it.
+    // NOTE: dma_buffer_size = dma_frame_num * slot_num * slot_bit_width / 8
+    size_t w_bytes;
+    ESP_ERROR_CHECK(i2s_channel_write(
+        tx_chan,
+        data_buf,
+        buf_len,
+        &w_bytes,
+        portMAX_DELAY));
+
+    if (w_bytes != buf_len)
+    {
+        printf("ERROR: expected number of bytes NOT written\r\n");
+    }
+
+    printf("DEBUG: done writing to i2s \r\n");
+
+    // Delay for stopping i2s data streaming
+    // TODO: trying to stop if after all data is sent instead of a delay.
+    // TODO: remove this and the sample_rate_temp const
+    int sample_rate_temp = 440;
+    float duration_sec = (float)w_bytes / 2 / sample_rate_temp; // divide by 2 for int16_t
+    printf("duration_sec * 1000= %f r\n", duration_sec * 1000);
+
+    vTaskDelay(pdMS_TO_TICKS(duration_sec * 1000));
+
+    i2s_channel_disable(tx_chan);
+    vTaskDelete(NULL);
 }

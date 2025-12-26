@@ -1,4 +1,4 @@
-source $IDF_PATH/export.sh
+# source $IDF_PATH/export.sh
 
 
 # Set my board specs as environment variables:
