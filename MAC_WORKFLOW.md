@@ -59,7 +59,8 @@ rsync -avz \
   --exclude build/ \
   --exclude sdkconfig \
   --exclude sdkconfig.old \
-  -e "ssh -p 2222 -i ~/.ssh/<priv_key>" \
+  --exclude .git/
+  -e "ssh -p 2222 -i ~/.ssh/dubuntu" \
   /Users/davidperez/Documents/GitHub/alarm-system/ \
   dubuntu@127.0.0.1:/home/dubuntu/projects/alarm_system/
 ```

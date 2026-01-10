@@ -8,19 +8,21 @@
 #include "freertos/portmacro.h" // for portMAX_DELAY
 
 // ESP defined GPIO pins used for i2s 1
-#define I2S_BCLK_IO1 GPIO_NUM_4  // I2S bit clock io number
-#define I2S_WS_IO1 GPIO_NUM_5    // I2S word select io number
-#define I2S_DOUT_IO1 GPIO_NUM_18 // I2S data out io number
-#define I2S_DIN_IO1 GPIO_NUM_19  // I2S data in io number
+#define I2S_BCLK_IO1 GPIO_NUM_27 // I2S bit clock io number
+#define I2S_WS_IO1 GPIO_NUM_26   // I2S word select io number
+#define I2S_DOUT_IO1 GPIO_NUM_25 // I2S data out io number
+#define I2S_DIN_IO1 GPIO_NUM_32  // UNUSED!!
 
 // I2S rx channel handler
 static i2s_chan_handle_t tx_chan;
 
 // Static function definitions:
-static void esp32_i2s_init(int sample_rate, int bits_per_sample, int channels);
+static void esp32_i2s_init(uint32_t sample_rate, int bits_per_sample, int channels);
 static void esp32_i2s_write(int16_t *data_buf, size_t buf_len);
 
-//
+// Struct to match with our subsystem i2s wrapper,
+// This is to allow this driver code to be hot-swappable
+// for other drivers.
 static const i2s_ops_t esp32_i2s_ops = {
     .init = esp32_i2s_init,
     .write = esp32_i2s_write,
@@ -33,7 +35,7 @@ void i2s_driver_register_esp32(void)
 }
 
 // TODO: incorporate bits_per_sample and channels
-static void esp32_i2s_init(int sample_rate, int bits_per_sample, int channels)
+static void esp32_i2s_init(uint32_t sample_rate, int bits_per_sample, int channels)
 {
     printf("simplex ran \r\n");
     /* Setp 1: Determine the I2S channel configuration and allocate two channels one by one
@@ -42,7 +44,7 @@ static void esp32_i2s_init(int sample_rate, int bits_per_sample, int channels)
      * The tx and rx channels here are registered on different I2S controller,
      * Except ESP32 and ESP32-S2, others allow to register two separate tx & rx channels on a same controller */
     i2s_chan_config_t tx_chan_cfg = I2S_CHANNEL_DEFAULT_CONFIG(I2S_NUM_AUTO, I2S_ROLE_MASTER);
-    tx_chan_cfg.dma_frame_num = 256; // TODO: consider changing based on latency concerns
+    tx_chan_cfg.dma_frame_num = 512; // TODO: consider changing based on latency concerns
     tx_chan_cfg.dma_desc_num = 4;    // TODO: consider changing based on latency concerns
     ESP_ERROR_CHECK(i2s_new_channel(&tx_chan_cfg, &tx_chan, NULL));
 
@@ -52,7 +54,7 @@ static void esp32_i2s_init(int sample_rate, int bits_per_sample, int channels)
      * They can help to specify the slot and clock configurations for initialization or re-configuring */
     i2s_std_config_t tx_std_cfg = {
         .clk_cfg = I2S_STD_CLK_DEFAULT_CONFIG(sample_rate),
-        .slot_cfg = I2S_STD_MSB_SLOT_DEFAULT_CONFIG(I2S_DATA_BIT_WIDTH_16BIT, I2S_SLOT_MODE_STEREO),
+        .slot_cfg = I2S_STD_PHILIPS_SLOT_DEFAULT_CONFIG(I2S_DATA_BIT_WIDTH_16BIT, I2S_SLOT_MODE_MONO),
         .gpio_cfg = {
             .mclk = I2S_GPIO_UNUSED, // some codecs may require mclk signal, this example doesn't need it
             .bclk = I2S_BCLK_IO1,
@@ -67,6 +69,8 @@ static void esp32_i2s_init(int sample_rate, int bits_per_sample, int channels)
         },
     };
     ESP_ERROR_CHECK(i2s_channel_init_std_mode(tx_chan, &tx_std_cfg));
+
+    ESP_ERROR_CHECK(i2s_channel_enable(tx_chan)); // TODO: RECENTLY MOVES HERE FOR WAV TESTING
 }
 
 static void esp32_i2s_write(int16_t *data_buf, size_t buf_len)
@@ -76,9 +80,9 @@ static void esp32_i2s_write(int16_t *data_buf, size_t buf_len)
         printf("ERROR: data_buf NULL \r\n");
     }
 
-    ESP_ERROR_CHECK(i2s_channel_enable(tx_chan));
+    // ESP_ERROR_CHECK(i2s_channel_enable(tx_chan));
 
-    printf("DEBUG: about to write to i2s \r\n");
+    // printf("DEBUG: about to write to i2s \r\n");
 
     // This is a blocking function that continues to populate the dma buffers
     // with the data passed into it.
@@ -96,17 +100,17 @@ static void esp32_i2s_write(int16_t *data_buf, size_t buf_len)
         printf("ERROR: expected number of bytes NOT written\r\n");
     }
 
-    printf("DEBUG: done writing to i2s \r\n");
+    // printf("DEBUG: done writing to i2s \r\n");
 
     // Delay for stopping i2s data streaming
     // TODO: trying to stop if after all data is sent instead of a delay.
     // TODO: remove this and the sample_rate_temp const
-    int sample_rate_temp = 440;
-    float duration_sec = (float)w_bytes / 2 / sample_rate_temp; // divide by 2 for int16_t
-    printf("duration_sec * 1000= %f r\n", duration_sec * 1000);
+    // int sample_rate_temp = 440;
+    // float duration_sec = (float)w_bytes / 2 / sample_rate_temp; // divide by 2 for int16_t
+    // printf("duration_sec * 1000= %f r\n", duration_sec * 1000);
 
-    vTaskDelay(pdMS_TO_TICKS(duration_sec * 1000));
+    // vTaskDelay(pdMS_TO_TICKS(duration_sec * 1000));
 
-    i2s_channel_disable(tx_chan);
-    vTaskDelete(NULL);
+    // i2s_channel_disable(tx_chan);
+    // vTaskDelete(NULL);
 }

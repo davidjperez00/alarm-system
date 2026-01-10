@@ -14,6 +14,7 @@ cmake_minimum_required(VERSION 3.16)
 # Tell ESP-IDF where to find "components" in src/
 set(EXTRA_COMPONENT_DIRS
     ${CMAKE_CURRENT_LIST_DIR}/src/subsystems/i2s
+    ${CMAKE_CURRENT_LIST_DIR}/src/subsystems/spi
     ${CMAKE_CURRENT_LIST_DIR}/src/drivers/esp32
     ${CMAKE_CURRENT_LIST_DIR}/src/app
 )
