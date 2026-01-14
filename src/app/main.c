@@ -3,6 +3,7 @@
 #include "../drivers/esp32/i2s_device.h"
 #include "../drivers/esp32/spi_device.h"
 #include "../drivers/esp32/sdcard_device.h"
+#include "sdcard_interface.h"
 
 // for memcmp
 #include <string.h>
@@ -13,90 +14,43 @@
 
 // Defines for sine function testing
 #include "math.h"
-#define EXAMPLE_BUFF_SIZE 10000
 #define SAMPLE_RATE 44100
 
-// TODO: investigate adding
-// buffers that go to dma on the stack?
-
-static void send_sine_wave()
-{
-    int16_t *w_buf = calloc(EXAMPLE_BUFF_SIZE / 2, sizeof(int16_t));
-    assert(w_buf);
-
-    int samples = EXAMPLE_BUFF_SIZE / 2; // '/2' idf.is for bytes to int16
-
-    int16_t frequency = 440; // 440hz
-    int16_t amplitude_max = 200;
-
-    for (int i = 0; i < samples; i++)
-    {
-        w_buf[i] = (int16_t)(amplitude_max * sin(2 * M_PI * frequency * i / SAMPLE_RATE));
-    }
-
-    i2s_write(w_buf, EXAMPLE_BUFF_SIZE);
-}
+// wave file from sd card to read
+// #define WAV_FILE_NAME "gs-16b-1c-44100hz.wav"
+// #define WAV_FILE_NAME "gs-16b-2c-44100hz.wav"
+#define WAV_FILE_NAME "3min-ff-16b-2c-44100hz.wav"
 
 // TODO: move this to some other component/directory
-#include <stdio.h>
-#include <stdint.h>
+
 #include <stdlib.h>
 
-typedef struct __attribute__((packed))
-{
-    // These 3 fields are required for all wav files.
-    char riff_id[4]; // "RIFF"
-    uint32_t file_size;
-    char wave_id[4]; // "WAVE"
-} wav_master_riff_header_t;
-
-typedef struct __attribute__((packed))
-{
-    // This chunk is required but its size of 16 bytes
-    // is only consistent for PCM audio_format.
-    // char fmt_id[4];        // "fmt "
-    // uint32_t fmt_size;     // 16
-    uint16_t audio_format; // 1 = PCM
-    uint16_t num_channels;
-    uint32_t sample_rate;
-    uint32_t byte_rate;
-    uint16_t block_align;
-    uint16_t bits_per_sample;
-} wav_fmt_min_header_t;
-
-// Note this is also the size of wav_fmt_min_header_t
-#define WAV_FMT_MIN_HEADER_BYTES 16
-
-void print_wav_master_riff_header(const wav_master_riff_header_t hdr)
-{
-    printf("RIFF ID        : %.4s\n", hdr.riff_id);
-    printf("File size      : %lu\n", hdr.file_size);
-    printf("WAVE ID        : %.4s\n", hdr.wave_id);
-}
-
-// TODO: incorporate this somehow
-// void print_wav_master_riff_header(const wav_master_riff_header_t hdr)
+// THIS WORKS WITH MY I2S CONFIGURATION
+// however, there is a pop about every .7 seconds
+// is is likely from phase discontinuity/ empty buffer
+// #define TEST_SAMPLES 30000
+// static int16_t test_buffer[TEST_SAMPLES * 2]; // Stereo
+// static void send_sin_wav_part1()
 // {
-//     printf("FMT ID         : %.4s\n", hdr.fmt_id);
-//     printf("FMT size       : %lu\n", hdr.fmt_size);
+
+//     // Generate 440 Hz tone
+//     for (int i = 0; i < TEST_SAMPLES; i++)
+//     {
+//         int16_t sample = (int16_t)(sin(2.0 * M_PI * 440.0 * i / 44100.0) * 10000);
+//         test_buffer[i * 2] = sample;     // Left
+//         test_buffer[i * 2 + 1] = sample; // Right
+//     }
+//     while (1)
+//     {
+//         i2s_write(test_buffer, TEST_SAMPLES * 2 * sizeof(int16_t));
+//     }
 // }
 
-void print_wav_fmt_min_header(const wav_fmt_min_header_t hdr)
-{
-    // printf("FMT ID         : %.4s\n", hdr.fmt_id);
-    // printf("FMT size       : %lu\n", hdr.fmt_size);
-    printf("Audio format   : %u\n", hdr.audio_format);
-    printf("Channels       : %u\n", hdr.num_channels);
-    printf("Sample rate    : %lu Hz\n", hdr.sample_rate);
-    printf("Byte rate      : %lu\n", hdr.byte_rate);
-    printf("Block align    : %u\n", hdr.block_align);
-    printf("Bits per samp  : %u\n", hdr.bits_per_sample);
-}
-
-void parse_wav_header_contents()
-{
-}
-
+#define WAV_NUM_SAMPLES 8192
+#define ZERO_BUF_SAMPLES 512
+static int16_t wav_buffer[WAV_NUM_SAMPLES];      // Stereo
+static int16_t zero_buf[ZERO_BUF_SAMPLES] = {0}; // Stereo
+// IMPLEMENTATION FROM 1/14
 void read_wav(const char *filename)
 {
     char path[64];
@@ -109,137 +63,100 @@ void read_wav(const char *filename)
         return;
     }
 
-    // Parse the master header that is conistent across all wav files.
-    wav_master_riff_header_t master_hdr;
-    if (fread(&master_hdr, 1, sizeof(wav_master_riff_header_t), f) != sizeof(wav_master_riff_header_t))
-    {
-        printf("Failed to read master riff header from wav file\r\n");
-        fclose(f);
-        return;
-    }
-
-    // Print master header
-    print_wav_master_riff_header(master_hdr);
-
-    // Allocate buffer for parsing wav file BlocID and BlocSize for each chunk.
-    uint8_t chunk_buffer_size = 8; //
-    uint8_t chunk_buffer[chunk_buffer_size];
-    uint32_t bloc_size = 0;
-    // Loop through header chunks until we get to the actual audio data.
-    // or end of file is reached.
-    while (!feof(f))
-    {
-        if (fread(&chunk_buffer, 1, chunk_buffer_size, f) != chunk_buffer_size)
-        {
-            printf("Failed to read WAV chunk \r\n");
-            fclose(f);
-            return;
-        }
-
-        // Get uint32_t conversion of BlocSize:
-        bloc_size =
-            ((uint32_t)chunk_buffer[4]) |
-            ((uint32_t)chunk_buffer[5] << 8) |
-            ((uint32_t)chunk_buffer[6] << 16) |
-            ((uint32_t)chunk_buffer[7] << 24);
-
-        char bloc_id[5]; // 4 chars + null terminator
-        memcpy(bloc_id, chunk_buffer, 4);
-        bloc_id[4] = '\0';
-
-        printf("BlocID = %.4s \r\n", bloc_id);
-        printf("BlocSize = %ld \r\n", bloc_size);
-
-        if (memcmp(chunk_buffer, "fmt ", 4) == 0)
-        {
-            if (bloc_size < WAV_FMT_MIN_HEADER_BYTES)
-            {
-                printf("%s Failed block size is less than 16 bytes\r\n", __func__);
-                fclose(f);
-                return;
-            }
-
-            // Read required fmt header information
-            wav_fmt_min_header_t fmt_hdr;
-            if (fread(&fmt_hdr, 1, sizeof(wav_fmt_min_header_t), f) != sizeof(wav_fmt_min_header_t))
-            {
-                printf("Failed to read WAV chunk \r\n");
-                fclose(f);
-                return;
-            }
-
-            // Print header contents
-            print_wav_fmt_min_header(fmt_hdr);
-
-            // TODO: Consider different ways to handle this
-            // This is the only format that is support by our amplifier setup.
-            if (fmt_hdr.audio_format != 1)
-            {
-                printf("audio_format is invalid, fmt_hdr.audio_format=%d  \r\n", fmt_hdr.audio_format);
-                fclose(f);
-                return;
-            }
-
-            // Skip the remaining fmt data since it's not relevant
-            // this is spec-correct according to chatgpt.
-            if (fseek(f, bloc_size - WAV_FMT_MIN_HEADER_BYTES, SEEK_CUR))
-            {
-                printf("Failed to read WAV chunk \r\n");
-                fclose(f);
-                return;
-            }
-        }
-        // We don't care about this data so we skip it
-        else if (memcmp(chunk_buffer, "LIST", 4) == 0)
-        {
-            if (fseek(f, bloc_size, SEEK_CUR))
-            {
-                printf("Failed to read WAV chunk \r\n");
-                fclose(f);
-                return;
-            }
-        }
-        else if (memcmp(chunk_buffer, "data", 4) == 0)
-        {
-            break;
-        }
-
-        // There may be odd numbred block size, since wav files are word alinged
-        // there will be a padding byte following this which we can skip.
-        if (bloc_size & 1)
-        {
-            if (fseek(f, 1, SEEK_CUR))
-            {
-                printf("Failed to increment past padding byte\r\n");
-                fclose(f);
-                return;
-            }
-        }
-    }
-
-    // Allocate buffer for PCM samples
-    size_t buffer_size = 512; // e.g., 512 bytes per read
-    int16_t *buffer = malloc(buffer_size * sizeof(int16_t));
-    if (!buffer)
-    {
-        printf("Failed to allocate buffer\n");
-        fclose(f);
-        return;
-    }
+    // Parse header file contents. This leaves the file pointer
+    // such that the next read is a data sample from the wave file
+    parse_wav_header_contents(f);
 
     // Read PCM samples in a loop
     size_t read_items;
-    while ((read_items = fread(buffer, sizeof(int16_t), buffer_size, f)) > 0)
+    // reads 'n' elements, each 'size' bytes long
+    while ((read_items = fread(wav_buffer, sizeof(int16_t), WAV_NUM_SAMPLES, f)) > 0)
     {
-        // buffer contains PCM data
-        // You can now send it to I2S
-        printf("buffer[0] = %d\r\n", buffer[0]);
+        // printf("buffer[0] = %d\r\n", buffer[0]);
         printf("read_items = %d\r\n", read_items);
-        i2s_write(buffer, read_items * sizeof(int16_t));
+        i2s_write(wav_buffer, read_items * sizeof(int16_t));
+
+        // INTENTIONALLY FEED SILENCE WHILE SD IS BUSY
+        i2s_write(zero_buf, ZERO_BUF_SAMPLES * sizeof(int16_t));
     }
 
-    free(buffer);
+    // free(buffer);
     fclose(f);
+
+    // ORIGINAL ATTEMPT:
+    // Allocate buffer for PCM samples
+    // size_t num_samples = 30000; // e.g., 512 bytes per read
+    // int16_t *buffer = malloc(num_samples * sizeof(int16_t));
+    // if (!buffer)
+    // {
+    //     printf("Failed to allocate buffer\n");
+    //     fclose(f);
+    //     return;
+    // }
+
+    // // Testing by writing to a file:
+    // FILE *f_test = fopen("/AUDIOSDCARD/test.raw", "wb");
+    // if (!f_test)
+    // {
+    //     printf("Failed to open file\n");
+    //     return;
+    // }
+    // size_t read_items_test;
+    // while ((read_items_test = fread(wav_buffer, sizeof(int16_t), WAV_NUM_SAMPLES, f)) > 0)
+    // {
+    //     // buffer contains PCM data
+    //     // You can now send it to I2S
+    //     // printf("buffer[0] = %d\r\n", buffer[0]);
+    //     printf("read_items_test = %d\r\n", read_items_test);
+    //     fwrite(wav_buffer, sizeof(int16_t), read_items_test, f_test);
+    // }
+
+    // printf("finished writing to f_test\r\n");
+    // fclose(f);
+    // fclose(f_test);
+
+    // // Claude:
+    // //  Allocate stereo buffer (2x size for L+R channels)
+    // size_t mono_samples = 2000; // Number of mono samples per chunk
+    // int16_t *stereo_buffer = malloc(mono_samples * 2 * sizeof(int16_t));
+    // int16_t *mono_buffer = malloc(mono_samples * sizeof(int16_t));
+
+    // if (!stereo_buffer || !mono_buffer)
+    // {
+    //     printf("Failed to allocate buffers\n");
+    //     fclose(f);
+    //     return;
+    // }
+
+    // size_t read_items;
+    // while ((read_items = fread(mono_buffer, sizeof(int16_t), mono_samples, f)) > 0)
+    // {
+    //     // Duplicate mono to stereo: [L, R, L, R, L, R...]
+    //     for (size_t i = 0; i < read_items; i++)
+    //     {
+    //         stereo_buffer[i * 2] = mono_buffer[i];     // Left channel
+    //         stereo_buffer[i * 2 + 1] = mono_buffer[i]; // Right channel (duplicate)
+    //     }
+
+    //     // // debug printing:
+    //     // for (size_t i = 0; i < read_items * 2; i++)
+    //     // {
+    //     //     printf("(%d, %d)", i, stereo_buffer[i]);
+
+    //     //     if (i % 20 == 0)
+    //     //     {
+    //     //         printf("\r\n");
+    //     //     }
+    //     // }
+
+    //     // Write stereo data to I2S
+    //     printf("read_items = %u\r\n", read_items);
+    //     i2s_write(stereo_buffer, read_items * 2 * sizeof(int16_t));
+    // }
+
+    // free(stereo_buffer);
+    // free(mono_buffer);
+    // fclose(f);
 }
 
 void sample_task(void *arg)
@@ -266,8 +183,9 @@ void app_main(void)
     driver_esp32_sdcard_init();
 
     // send_sine_wave();
+    // send_sin_wav_part1();
 
-    read_wav("gs-16b-1c-44100hz.wav");
+    read_wav(WAV_FILE_NAME);
 
     // Create the task
     // xTaskCreate(
@@ -278,8 +196,6 @@ void app_main(void)
     //     5,             // priority (0–configMAX_PRIORITIES-1)
     //     NULL           // task handle (optional)
     // );
-
-    // read_wav("gs-16b-1c-44100hz.wav");
 
     // // Minimal loop
     // while (1)

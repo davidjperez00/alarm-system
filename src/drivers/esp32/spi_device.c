@@ -4,9 +4,6 @@
 // esp-idf defines
 #include "driver/spi_common.h"
 #include "driver/gpio.h"
-// #include "freertos/FreeRTOS.h"
-// #include "freertos/task.h"
-// #include "freertos/portmacro.h" // for portMAX_DELAY
 
 // ESP defined GPIO pins used for spi 1
 // #define SPI_SC0 GPIO_NUM_15  // spi data in io number
