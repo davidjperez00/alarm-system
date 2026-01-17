@@ -4,6 +4,7 @@
 #include "../drivers/esp32/spi_device.h"
 #include "../drivers/esp32/sdcard_device.h"
 #include "sdcard_interface.h"
+#include "audio_stream.h"
 
 // for memcmp
 #include <string.h>
@@ -18,8 +19,8 @@
 
 // wave file from sd card to read
 // #define WAV_FILE_NAME "gs-16b-1c-44100hz.wav"
-// #define WAV_FILE_NAME "gs-16b-2c-44100hz.wav"
-#define WAV_FILE_NAME "3min-ff-16b-2c-44100hz.wav"
+#define WAV_FILE_NAME "gs-16b-2c-44100hz.wav"
+// #define WAV_FILE_NAME "3min-ff-16b-2c-44100hz.wav"
 
 // TODO: move this to some other component/directory
 
@@ -184,8 +185,19 @@ void app_main(void)
 
     // send_sine_wave();
     // send_sin_wav_part1();
+    // read_wav(WAV_FILE_NAME);
 
-    read_wav(WAV_FILE_NAME);
+    // Start playing a WAV file
+    read_wav_with_ring_buffer(WAV_FILE_NAME);
+
+    // Wait for playback to complete
+    while (is_audio_playing())
+    {
+        vTaskDelay(pdMS_TO_TICKS(100));
+        // printf("Still playing...\n");
+    }
+
+    printf("Playback finished!\n");
 
     // Create the task
     // xTaskCreate(

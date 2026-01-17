@@ -5,18 +5,6 @@
 #include <string.h>
 #include <stdio.h>
 
-#define RING_BUFFER_SIZE (16384) // 16KB buffer
-
-typedef struct
-{
-    int16_t data[RING_BUFFER_SIZE];
-    volatile size_t write_pos;
-    volatile size_t read_pos;
-    volatile size_t available;
-    mutex_t mutex;
-    bool initialized;
-} ring_buffer_t;
-
 bool ring_buffer_init(ring_buffer_t *rb)
 {
     if (rb == NULL)

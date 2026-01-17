@@ -26,9 +26,21 @@ typedef SemaphoreHandle_t mutex_t;
 #define MUTEX_DESTROY(m) ((m != NULL) && (vSemaphoreDelete(m), true))
 #endif
 
+#define RING_BUFFER_SIZE (16384) // 16KB buffer
+
+typedef struct
+{
+    int16_t data[RING_BUFFER_SIZE];
+    volatile size_t write_pos;
+    volatile size_t read_pos;
+    volatile size_t available;
+    mutex_t mutex;
+    bool initialized;
+} ring_buffer_t;
+
 // Ring buffer structure (opaque to users)
 // Users can use this struct but won't be able to access elements of it.
-typedef struct ring_buffer_t ring_buffer_t;
+// typedef struct ring_buffer_t ring_buffer_t;
 
 /**
  * @brief Initialize a ring buffer

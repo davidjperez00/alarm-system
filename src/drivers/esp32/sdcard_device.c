@@ -10,7 +10,7 @@ static sdmmc_card_t *card;
 void driver_esp32_sdcard_init()
 {
   sdmmc_host_t host = SDSPI_HOST_DEFAULT();
-  host.max_freq_khz = 100;
+  host.max_freq_khz = 10000;
 
   sdspi_device_config_t slot_config = SDSPI_DEVICE_CONFIG_DEFAULT();
   slot_config.gpio_cs = 5; // TODO: update to GPIO_NUM_5
