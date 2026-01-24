@@ -17,6 +17,9 @@ set(EXTRA_COMPONENT_DIRS
     ${CMAKE_CURRENT_LIST_DIR}/src/subsystems/spi
     ${CMAKE_CURRENT_LIST_DIR}/src/drivers/esp32
     ${CMAKE_CURRENT_LIST_DIR}/src/app
+    ${CMAKE_CURRENT_LIST_DIR}/src/app/wav_parser
+    ${CMAKE_CURRENT_LIST_DIR}/src/app/audio_stream
+    ${CMAKE_CURRENT_LIST_DIR}/src/app/audio_stream_old
 )
 
 # ESP-IDF specific criteria: 

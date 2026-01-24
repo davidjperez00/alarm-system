@@ -1,4 +1,4 @@
-#include "sdcard_interface.h"
+#include "wav_parser.h"
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
@@ -28,9 +28,9 @@ typedef struct __attribute__((packed))
 
 void print_wav_master_riff_header(const wav_master_riff_header_t hdr)
 {
-    printf("RIFF ID        : %.4s\n", hdr.riff_id);
-    printf("File size      : %lu\n", hdr.file_size);
-    printf("WAVE ID        : %.4s\n", hdr.wave_id);
+    printf("RIFF ID          : %.4s\n", hdr.riff_id);
+    printf("File size        : %lu\n", hdr.file_size);
+    printf("WAVE ID          : %.4s\n", hdr.wave_id);
 }
 
 void print_wav_fmt_min_header(const wav_fmt_min_header_t hdr)

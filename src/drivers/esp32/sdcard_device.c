@@ -10,7 +10,7 @@ static sdmmc_card_t *card;
 void driver_esp32_sdcard_init()
 {
   sdmmc_host_t host = SDSPI_HOST_DEFAULT();
-  host.max_freq_khz = 10000;
+  host.max_freq_khz = 25000;
 
   sdspi_device_config_t slot_config = SDSPI_DEVICE_CONFIG_DEFAULT();
   slot_config.gpio_cs = 5; // TODO: update to GPIO_NUM_5
@@ -21,5 +21,5 @@ void driver_esp32_sdcard_init()
       .max_files = 10,
   };
 
-  ESP_ERROR_CHECK(esp_vfs_fat_sdspi_mount("/AUDIOSDCARD", &host, &slot_config, &mount_config, &card));
+  ESP_ERROR_CHECK(esp_vfs_fat_sdspi_mount(SD_CARD_MOUNT_POINT, &host, &slot_config, &mount_config, &card));
 }

@@ -1,3 +1,6 @@
+#ifndef AUDIO_STREAM_RING_H
+#define AUDIO_STREAM_RING_H
+
 /**
  * @brief Task that reads from SD card and writes to ring buffer
  * @param pvParameters FILE pointer to the WAV file
@@ -25,3 +28,5 @@ bool is_audio_playing(void);
  * @brief Stop audio playback and clean up
  */
 void stop_audio_playback(void);
+
+#endif // #endif // AUDIO_STREAM_H

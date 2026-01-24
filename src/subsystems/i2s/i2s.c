@@ -12,6 +12,11 @@ void i2s_init(uint32_t sample_rate, int bits_per_sample, int channels)
     if (i2s_backend && i2s_backend->init)
         i2s_backend->init(sample_rate, bits_per_sample, channels);
 }
+void i2s_deinit()
+{
+    if (i2s_backend && i2s_backend->deinit)
+        i2s_backend->deinit();
+}
 
 void i2s_write(int16_t *data, size_t data_len)
 {
