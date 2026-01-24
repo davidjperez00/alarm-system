@@ -1,0 +1,18 @@
+{
+    "configurations": [
+        {
+            "name": "Mac",
+            "compileCommands": "${workspaceFolder}/build/compile_commands.json"
+            // THE BELOW WON'T BE USED SINCE WE'RE USING ESP-32 BUILD SYSTEM
+            // "includePath": [
+            //     "${workspaceFolder}/**"
+            // ],
+            // "defines": [],
+            // "compilerPath": "/usr/bin/clang",
+            // "cStandard": "c17",
+            // "cppStandard": "c++14",
+            // "intelliSenseMode": "macos-clang-x64"
+        }
+    ],
+    "version": 4
+}
