@@ -27,7 +27,6 @@
 
 void app_main(void)
 {
-    printf("HELLO STARTING MAIN APPLICATION \r\n\r\n");
     /* BSP LEVEL INITIALIZATIONS*/
     // Register ESP32 I2S driver
     i2s_driver_register_esp32();
@@ -35,7 +34,10 @@ void app_main(void)
     driver_esp32_spi_register_ops();
 
     // Init I2S with basic configuration
+    // TODO: This should probably be set for the specific wav file
+    // that is going to be played.
     i2s_init(SAMPLE_RATE, 16, 2);
+
     // Init SPI with basic configuration
     spi_init();
 
