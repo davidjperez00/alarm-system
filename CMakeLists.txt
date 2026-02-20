@@ -15,11 +15,13 @@ cmake_minimum_required(VERSION 3.16)
 set(EXTRA_COMPONENT_DIRS
     ${CMAKE_CURRENT_LIST_DIR}/src/subsystems/i2s
     ${CMAKE_CURRENT_LIST_DIR}/src/subsystems/spi
+    ${CMAKE_CURRENT_LIST_DIR}/src/subsystems/gpio
     ${CMAKE_CURRENT_LIST_DIR}/src/drivers/esp32
     ${CMAKE_CURRENT_LIST_DIR}/src/app
     ${CMAKE_CURRENT_LIST_DIR}/src/app/wav_parser
     ${CMAKE_CURRENT_LIST_DIR}/src/app/audio_stream
     ${CMAKE_CURRENT_LIST_DIR}/src/app/audio_stream_old
+    ${CMAKE_CURRENT_LIST_DIR}/src/app/reed_monitor
 )
 
 # ESP-IDF specific criteria: 
