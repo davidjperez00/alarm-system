@@ -2,3 +2,10 @@
 /build/
 sdkconfig
 sdkconfig.old
+
+
+# Ignore schematic backup files
+/hardware/alarm_system_hardware/alarm_system_hardware-backups
+
+#ignore schematic lock file
+/hardware/alarm_system_hardware/~alarm_system_hardware.kicad_sch.lck
