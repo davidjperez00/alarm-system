@@ -1,0 +1,9 @@
+(sym_lib_table
+  (version 7)
+  (lib (name "led_driver")(type "KiCad")(uri "${KIPRJMOD}/symbols/PCA9955BTW.kicad_sym")(options "")(descr ""))
+  (lib (name "battery_charger")(type "KiCad")(uri "${KIPRJMOD}/symbols/BQ25616JRTWR.kicad_sym")(options "")(descr ""))
+  (lib (name "4to1_mux")(type "KiCad")(uri "${KIPRJMOD}/symbols/TMUX1204DQAR.kicad_sym")(options "")(descr ""))
+  (lib (name "regulator_3v3")(type "KiCad")(uri "${KIPRJMOD}/symbols/TPS63802DLAR.kicad_sym")(options "")(descr ""))
+  (lib (name "micro_sd")(type "KiCad")(uri "${KIPRJMOD}/symbols/MSD-11-A.kicad_sym")(options "")(descr ""))
+  (lib (name "usb_c_2_0")(type "KiCad")(uri "${KIPRJMOD}/symbols/UJ20-C-H-G-SMT-1-P16-TR.kicad_sym")(options "")(descr ""))
+)
