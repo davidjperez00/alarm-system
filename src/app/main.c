@@ -2,8 +2,10 @@
 #include "spi.h"
 #include "../drivers/esp32/i2s_device.h"
 #include "../drivers/esp32/spi_device.h"
+#include "../drivers/esp32/esp32_gpio.h"
 #include "../drivers/esp32/sdcard_device.h"
 #include "audio_stream/audio_stream.h"
+#include "reed_monitor/reed_monitor.h"
 
 // I2S subsystem defines, TODO: eventually should be changed to
 // configure i2s channel based on wav file data.
@@ -28,10 +30,25 @@
 void app_main(void)
 {
     /* BSP LEVEL INITIALIZATIONS*/
-    // Register ESP32 I2S driver
+    // Register ESP32 I2S driver with subsystem wrapper
     i2s_driver_register_esp32();
-    // Register ESP32 SPI driver
+    // Register ESP32 SPI driver with subsystem wrapper
     driver_esp32_spi_register_ops();
+    // Register ESP32 gpio driver with subsystem wrapper
+    esp32_gpio_driver_register_ops();
+
+    if (!reed_monitor_init())
+    {
+        printf("MAIN FAILED\r\n");
+        return;
+    }
+
+    // while (1)
+    // {
+    //     // Note return value intentionally ignored:
+    //     reed_monitor_debounce_pin();
+    //     vTaskDelay(pdMS_TO_TICKS(10));
+    // }
 
     // Init I2S with basic configuration
     // TODO: This should probably be set for the specific wav file
