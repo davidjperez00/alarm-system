@@ -11,3 +11,4 @@ void spi_register_ops(const spi_ops_t *ops);
 void spi_init();
 // TODO: make this more flexible instead of just int16_t
 void spi_write(int16_t *data_buf, size_t buf_len);
+bool spi_is_initialized(void);

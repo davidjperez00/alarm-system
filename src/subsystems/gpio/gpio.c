@@ -4,6 +4,7 @@
 #include <stdbool.h>
 
 static const gpio_ops_t *gpio_backend = 0;
+static bool is_initialized = false;
 
 bool gpio_register_ops(const gpio_ops_t *ops)
 {
@@ -16,7 +17,14 @@ bool gpio_register_ops(const gpio_ops_t *ops)
 
     gpio_backend = ops;
 
+    is_initialized = true;
+
     return true;
+}
+
+bool gpio_is_initialized(void)
+{
+    return is_initialized;
 }
 
 bool gpio_configure_pin(custom_gpio_config_t gpio_config)

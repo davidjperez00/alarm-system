@@ -1,6 +1,7 @@
 #include "spi.h"
 
 static const spi_ops_t *spi_backend = 0;
+static bool is_initialized = false;
 
 void spi_register_ops(const spi_ops_t *ops)
 {
@@ -10,7 +11,10 @@ void spi_register_ops(const spi_ops_t *ops)
 void spi_init()
 {
   if (spi_backend && spi_backend->init)
+  {
     spi_backend->init();
+    is_initialized = true;
+  }
 }
 
 void spi_write(int16_t *data, size_t data_len)
@@ -19,4 +23,9 @@ void spi_write(int16_t *data, size_t data_len)
   {
     spi_backend->write(data, data_len);
   }
+}
+
+bool spi_is_initialized(void)
+{
+  return is_initialized;
 }
