@@ -7,9 +7,9 @@
 
 // ESP defined GPIO pins used for spi 1
 // #define SPI_SC0 GPIO_NUM_15  // spi data in io number
-#define SPI_SCLK GPIO_NUM_18 // spi bit clock io number
-#define SPI_MISO GPIO_NUM_19 // spi word select io number
-#define SPI_MOSI GPIO_NUM_23 // spi data out io number
+#define SPI_SCLK GPIO_NUM_2  // spi bit clock io number
+#define SPI_MISO GPIO_NUM_38 // spi word select io number
+#define SPI_MOSI GPIO_NUM_1  // spi data out io number
 
 // Static function definitions:
 static void driver_esp32_spi_init();

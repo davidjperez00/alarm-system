@@ -11,9 +11,9 @@
 // #include "driver/periph_ctrl.h" // for disabling peripheral
 
 // ESP defined GPIO pins used for i2s 1
-#define I2S_BCLK_IO1 GPIO_NUM_27 // I2S bit clock io number
-#define I2S_WS_IO1 GPIO_NUM_26   // I2S word select io number
-#define I2S_DOUT_IO1 GPIO_NUM_25 // I2S data out io number
+#define I2S_BCLK_IO1 GPIO_NUM_47 // I2S bit clock io number
+#define I2S_WS_IO1 GPIO_NUM_48   // I2S word select (aka. LRCLK) io number
+#define I2S_DOUT_IO1 GPIO_NUM_21 // I2S data out io number
 
 // I2S rx channel handler
 static i2s_chan_handle_t tx_chan;
@@ -148,10 +148,6 @@ static void esp32_i2s_deinit()
     is2_enabled = false;
 }
 
-// @brief: write to i2s data lines
-// @param data_buf: Pointer to PCM data buffer.
-// @param buf_len: expects length 'data_buf' in BYTES.
-
 /**
  * @brief write to I2S hardware perpheral.
  *
@@ -174,8 +170,6 @@ static void esp32_i2s_write(int16_t *data_buf, size_t buf_len)
         printf("ERROR: %s data_buf NULL \r\n", __func__);
         return;
     }
-
-    printf("ABOUT TO WRITE TO CHANNEL\r\n");
 
     // This is a blocking function that continues to populate the dma buffers
     // with the data passed into it.

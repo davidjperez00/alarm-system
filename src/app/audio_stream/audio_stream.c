@@ -52,21 +52,28 @@ bool audio_stream_wav_file(const char *filepath)
 // THIS WORKS WITH MY I2S CONFIGURATION
 // however, there is a pop about every .7 seconds
 // is is likely from phase discontinuity/ empty buffer
-// #define TEST_SAMPLES 30000
-// static int16_t test_buffer[TEST_SAMPLES * 2]; // Stereo
-// static void send_sin_wav_part1()
-// {
-// #define SAMPLE_RATE 44100
+#define TEST_SAMPLES 50000
+static int16_t test_buffer[TEST_SAMPLES * 2]; // Stereo
+void send_sin_wav_part1()
+{
+#define SAMPLE_RATE 44100
 
-//     // Generate 440 Hz tone
-//     for (int i = 0; i < TEST_SAMPLES; i++)
-//     {
-//         int16_t sample = (int16_t)(sin(2.0 * M_PI * 440.0 * i / 44100.0) * 10000);
-//         test_buffer[i * 2] = sample;     // Left
-//         test_buffer[i * 2 + 1] = sample; // Right
-//     }
-//     while (1)
-//     {
-//         i2s_write(test_buffer, TEST_SAMPLES * 2 * sizeof(int16_t));
-//     }
-// }
+    // Generate 440 Hz tone
+    for (int i = 0; i < TEST_SAMPLES; i++)
+    {
+        // Original working sin wave code
+        int16_t sample = (int16_t)(sin(2.0 * M_PI * 432.0 * i / 44100.0) * 5000);
+        test_buffer[i * 2] = sample;     // Left
+        test_buffer[i * 2 + 1] = sample; // Right
+
+        // // Sending zero's test for power consumption potential issue:
+        // test_buffer[i * 2] = 0;     // Left
+        // test_buffer[i * 2 + 1] = 0; // Right
+    }
+    while (1)
+    {
+        i2s_write(test_buffer, TEST_SAMPLES * 2 * sizeof(int16_t));
+    }
+
+    // i2s_write(test_buffer, TEST_SAMPLES * 2 * sizeof(int16_t));
+}
