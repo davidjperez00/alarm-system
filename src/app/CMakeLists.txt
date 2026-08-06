@@ -7,4 +7,5 @@ idf_component_register(
         i2s # My project directory
         esp32 # my project directory
         audio_amp  # my project directory
+        micro_sdcard # my project directory
 )

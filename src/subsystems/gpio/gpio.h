@@ -60,6 +60,7 @@ typedef struct gpio_ops_t
 // TODO: consider making these const of pointers
 // do avoid function calls copying structure!
 bool gpio_register_ops(const gpio_ops_t *ops);
+bool gpio_is_initialized(void);
 bool gpio_configure_pin(custom_gpio_config_t gpio_config);
 int32_t gpio_read_pin(uint32_t gpio_num);
 int32_t gpio_write_pin(uint32_t gpio_num, uint32_t level);
