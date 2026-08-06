@@ -23,17 +23,20 @@ static const gpio_ops_t esp32_gpio_ops = {
 
 static const uint64_t restricted_gpio_pins[] = {
     GPIO_NUM_0,  // BOOT MODE to enter flash mode
-    GPIO_NUM_2,  // Strapped at boot, high for normal boot
-    GPIO_NUM_12, // Strapped at boot, controls VDD_SDIO
-    GPIO_NUM_15, // Pulled LOW for boot mode (sed with SDIO sometimes)
-    GPIO_NUM_6,  // Flash/SPI
-    GPIO_NUM_7,  // Flash/SPI
-    GPIO_NUM_8,  // Flash/SPI
-    GPIO_NUM_9,  // Flash/SPI
-    GPIO_NUM_10, // Flash/SPI
-    GPIO_NUM_11, // Flash/SPI
-    GPIO_NUM_1,  // TX for for serial coms, (used for flashing)
-    GPIO_NUM_3   // RX for for serial coms, (used for flashing)
+    GPIO_NUM_35, // PSRAM reserved pin
+    GPIO_NUM_36, // PSRAM reserved pin
+    GPIO_NUM_37, // PSRAM reserved pin
+    // GPIO_NUM_2,  // Strapped at boot, high for normal boot
+    // GPIO_NUM_12, // Strapped at boot, controls VDD_SDIO
+    // GPIO_NUM_15, // Pulled LOW for boot mode (sed with SDIO sometimes)
+    // GPIO_NUM_6,  // Flash/SPI
+    // GPIO_NUM_7,  // Flash/SPI
+    // GPIO_NUM_8,  // Flash/SPI
+    // GPIO_NUM_9,  // Flash/SPI
+    // GPIO_NUM_10, // Flash/SPI
+    // GPIO_NUM_11, // Flash/SPI
+    // GPIO_NUM_1,  // TX for for serial coms, (used for flashing)
+    // GPIO_NUM_3   // RX for for serial coms, (used for flashing)
 
 };
 

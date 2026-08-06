@@ -6,4 +6,5 @@ idf_component_register(
     REQUIRES 
         i2s # My project directory
         esp32 # my project directory
+        audio_amp  # my project directory
 )
