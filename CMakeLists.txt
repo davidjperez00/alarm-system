@@ -18,6 +18,7 @@ set(EXTRA_COMPONENT_DIRS
     ${CMAKE_CURRENT_LIST_DIR}/src/subsystems/gpio
     ${CMAKE_CURRENT_LIST_DIR}/src/subsystems/audio_amp
     ${CMAKE_CURRENT_LIST_DIR}/src/subsystems/micro_sdcard
+    ${CMAKE_CURRENT_LIST_DIR}/src/subsystems/user_buttons
     ${CMAKE_CURRENT_LIST_DIR}/src/drivers/esp32
     ${CMAKE_CURRENT_LIST_DIR}/src/app
     ${CMAKE_CURRENT_LIST_DIR}/src/app/wav_parser

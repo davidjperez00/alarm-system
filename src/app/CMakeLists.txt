@@ -8,4 +8,6 @@ idf_component_register(
         esp32 # my project directory
         audio_amp  # my project directory
         micro_sdcard # my project directory
+        user_buttons # my project directory
+
 )

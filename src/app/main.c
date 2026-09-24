@@ -2,6 +2,7 @@
 #include "spi.h"
 #include "audio_amp.h"
 #include "micro_sdcard.h"
+#include "user_buttons.h"
 #include "../drivers/esp32/i2s_device.h"
 #include "../drivers/esp32/spi_device.h"
 #include "../drivers/esp32/esp32_gpio.h"
@@ -83,7 +84,9 @@ void test_amp(void)
 
 void app_main(void)
 {
-    /* BSP WRAPPER INITIALIZATIONS */
+    /*
+     * BSP WRAPPER INITIALIZATIONS
+     */
     // Register ESP32 I2S driver with subsystem wrapper
     i2s_driver_register_esp32();
     // Register ESP32 SPI driver with subsystem wrapper
@@ -91,20 +94,31 @@ void app_main(void)
     // Register ESP32 gpio driver with subsystem wrapper
     esp32_gpio_driver_register_ops();
 
-    /* BSP INTERNAL PERIPHERAL INITIALIZATIONS */
+    /**
+     *  BSP INTERNAL PERIPHERAL INITIALIZATIONS
+     */
     // Init I2S with basic configuration
     // TODO: This should probably be set for the specific wav file that is going to be played.
     i2s_init(SAMPLE_RATE, 16, 2);
     // Init SPI with basic configuration
     spi_init();
 
-    /* BSP EXTERNAL PERIPHERAL INITIALIZATIONS */
-    // initalize the amp
+    /**
+     * BSP EXTERNAL PERIPHERAL INITIALIZATIONS
+     */
+    // Initalize the amp
     audio_amp_init();
     // Initialize the sd card (this includes mounting the file system)
     micro_sdcard_init();
+    // Initialize user_button gpio pins, interrupts, and create debounce task
+    user_buttons_init();
 
-    /* MAIN PROGRAM RUN */
+    /*
+     *  MAIN PROGRAM RUN
+     */
+
+    vTaskDelay(pdMS_TO_TICKS(1000));
+
     audio_stream_wav_file(WAV_FILE_NAME);
 
     // Used to prevent popping when audio file finishes playing
